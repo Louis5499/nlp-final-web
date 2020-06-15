@@ -3,7 +3,8 @@
   <div id="app" :class="{ 'results-mode': resultsMode }">
     <div class="search">
       <div class="search-inner">
-        <input ref="searchField" v-model="state.keyword" placeholder="keyword" @keyup.enter="search" @keyup.esc="reset"/>
+        <input ref="searchField" v-model="state.keyword" :placeholder="currentInputState === 0 ? 'keyword' : 'Article ID'" @keyup.enter="search" @keyup.esc="reset"/>
+        <span v-if="!resultsMode" class="switch-button" @click="switchInput">Switch</span>
         <transition
           v-on:enter="clearBtnEnter"
           v-on:leave="clearBtnLeave"
@@ -14,6 +15,8 @@
         </transition>
       </div>
     </div>
+
+    <pulse-loader :loading="isLoading" :color="'#fff'" ></pulse-loader>
 
     <transition-group
       v-on:enter="enter"
@@ -36,7 +39,7 @@
 <script>
 import $ from 'jquery';
 import { TimelineMax, Back, Expo, Power4 } from "gsap";
-
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue'
 
 export default {
   name: 'HelloWorld',
@@ -48,9 +51,12 @@ export default {
         keyword: '',
         resultsMode: false
       },
+      currentInputState: 0, // 0 -> keyword   1 -> article id
+      isLoading: false,
       ENDPOINT: '//en.wikipedia.org/w/api.php'
     }
   },
+  components: { PulseLoader },
   computed: {
     resultsMode() {
       return this.state.resultsMode;
@@ -73,14 +79,23 @@ export default {
       //     this.results();
       //   }
       // });
+      let apiRoute;
+      if (this.currentInputState === 0) apiRoute = `http://localhost:5000/search/${this.state.keyword}`;
+      else apiRoute = `http://localhost:5000/article/${this.state.keyword}`;
+      this.isLoading = true;
       $.ajax({
-        url: `http://localhost:5000/search/${this.state.keyword}`,
+        url: apiRoute,
         dataType: 'json',
         success: res => {
+          this.isLoading = false;
           this.state.results = res;
           // this.results();
         }
       })
+    },
+    switchInput() {
+      if (this.currentInputState === 0) this.currentInputState = 1;
+      else this.currentInputState = 0;
     },
     results() {
       if (this.state.apiResults) {
@@ -212,6 +227,12 @@ $c-bg: $c-1;
     color:$color;
     transition:color .2s;
   }
+}
+
+.switch-button {
+  font-size: .5em;
+  color: rgba(white, .5);
+  cursor: pointer;
 }
 
 .search {
