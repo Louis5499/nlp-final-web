@@ -4,35 +4,45 @@
     <h3 class="title">{{searchedData.title}}</h3>
     <span class="excerpt">{{searchedData.excerpt}}</span>
     <div class="divide-line"></div>
+    <div class="select-banner">
+      <div class="tf-button select-button" @click="currentTab = 0" :class="{ 'is-selected': (currentTab === 0) }">tf-idf</div>
+      <div class="tf-button select-button" @click="currentTab = 1" :class="{ 'is-selected': (currentTab === 1) }">tf-idf + pf</div>
+    </div>
     <div class="content-banner">
-      <span class="second">「{{searchedData.keyword_content[0][0]}}」</span>
+      <span class="second">「{{content[0][0]}}」</span>
       <span class="first">貼文內容關鍵字</span>
     </div>
-    <div class="graph-row">
+    <div class="graph-row" v-show="currentTab === 0">
       <canvas id="graph-content" width="1000" height="400"></canvas>
     </div>
+    <div class="graph-row" v-show="currentTab === 1">
+      <canvas id="graph-content-pf" width="1000" height="400"></canvas>
+    </div>
     <div class="keyword-set">
-      <div v-for="(result, idx) in searchedData.keyword_content" class="keyword-row" :key="idx">
+      <div v-for="(result, idx) in content" class="keyword-row" :key="idx">
         <span class="keyword-title">{{`${idx+1}: ${result[0]}`}}</span>
         <div class="keyword-related-set">
-          <span v-for="(innerResult, innerIdx) in result[4]" class="keyword-content" :key="innerIdx">{{innerResult}}</span>
+          <span v-for="(innerResult, innerIdx) in result[6]" class="keyword-content" :key="innerIdx">{{innerResult}}</span>
         </div>
       </div>
     </div>
     <p class="content">{{searchedData.content}}</p>
     <div class="divide-line"></div>
     <div class="content-banner">
-      <span class="second">「{{searchedData.keyword_comments[0][0]}}」</span>
+      <span class="second">「{{comment[0][0]}}」</span>
       <span class="first">留言關鍵字</span>
     </div>
-    <div class="graph-row">
+    <div class="graph-row" v-show="currentTab === 0">
       <canvas id="graph-comment" width="1000" height="400"></canvas>
     </div>
+    <div class="graph-row" v-show="currentTab === 1">
+      <canvas id="graph-comment-pf" width="1000" height="400"></canvas>
+    </div>
     <div class="keyword-set">
-      <div v-for="(result, idx) in searchedData.keyword_comments" class="keyword-row" :key="idx">
+      <div v-for="(result, idx) in comment" class="keyword-row" :key="idx">
         <span class="keyword-title">{{`${idx+1}: ${result[0]}`}}</span>
         <div class="keyword-related-set">
-          <span v-for="(innerResult, innerIdx) in result[4]" class="keyword-content" :key="innerIdx">{{innerResult}}</span>
+          <span v-for="(innerResult, innerIdx) in result[6]" class="keyword-content" :key="innerIdx">{{innerResult}}</span>
         </div>
       </div>
     </div>
@@ -46,7 +56,7 @@ import Palette from 'google-palette';
 export default {
   data() {
     return {
-
+      currentTab: 0 // 0 -> tf-idf    1 -> tf-idf + pf
     }
   },
   props: {
@@ -59,8 +69,17 @@ export default {
       this.$emit('back', 0);
     }
   },
+  computed: {
+    content() {
+      return this.currentTab === 0 ? this.searchedData.keyword_content : this.searchedData.keyword_content_pf;
+    },
+    comment() {
+      return this.currentTab === 0 ? this.searchedData.keyword_comments : this.searchedData.keyword_comments_pf;
+    }
+  },
   mounted() {
     // tidy data
+    console.log(this.searchedData);
     const commentKeywordsData = [];
     const commentKeywordsLabel = [];
     const contentKeywordsData = [];
@@ -81,7 +100,6 @@ export default {
     const colorArr = Palette('tol-rainbow', commentKeywordsData.length).map(function(hex) {
       return '#' + hex;
     })
-    console.log(commentKeywordsLabel)
 
     const ctxContent = document.getElementById('graph-content');
     new Chart(ctxContent, {
@@ -89,7 +107,7 @@ export default {
       data: {
         datasets: [{
           data: contentKeywordsData,
-          backgroundColor: contentColorArr,
+          backgroundColor: contentColorArr.reverse(),
         }],
         labels: contentKeywordsLabel
       },
@@ -104,9 +122,62 @@ export default {
       data: {
         datasets: [{
           data: commentKeywordsData,
-          backgroundColor: colorArr,
+          backgroundColor: colorArr.reverse(),
         }],
         labels: commentKeywordsLabel
+      },
+      options: {
+        responsive: false
+      }
+    });
+
+
+    // pf
+    const commentKeywordsDataPf = [];
+    const commentKeywordsLabelPf = [];
+    const contentKeywordsDataPf = [];
+    const contentKeywordsLabelPf = [];
+    for (const comment of this.searchedData.keyword_comments_pf) {
+      commentKeywordsDataPf.push(comment[1]);
+      commentKeywordsLabelPf.push(comment[0]);
+    }
+    for (const content of this.searchedData.keyword_content_pf) {
+      contentKeywordsDataPf.push(content[1]);
+      contentKeywordsLabelPf.push(content[0]);
+    }
+
+    const contentColorArrPf = Palette('tol-rainbow', contentKeywordsDataPf.length).map(function(hex) {
+      return '#' + hex;
+    })
+
+    const colorArrPf = Palette('tol-rainbow', commentKeywordsDataPf.length).map(function(hex) {
+      return '#' + hex;
+    })
+
+    const ctxContentPf = document.getElementById('graph-content-pf');
+    new Chart(ctxContentPf, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: contentKeywordsDataPf,
+          backgroundColor: contentColorArrPf.reverse(),
+        }],
+        labels: contentKeywordsLabelPf
+      },
+      options: {
+        responsive: false
+      }
+    });
+
+    const ctxCommentPf = document.getElementById('graph-comment-pf');
+    new Chart(ctxCommentPf, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: commentKeywordsDataPf,
+          backgroundColor: colorArrPf.reverse(),
+        }],
+        labels: commentKeywordsLabelPf
       },
       options: {
         responsive: false
@@ -222,5 +293,25 @@ $c-bg: $c-1;
   display: flex;
   flex-direction: row;
   justify-content: center;
+}
+.select-banner {
+  display: flex;
+  flex-direction: row;
+  height: 60px;
+  align-items: center;
+  justify-content: center;
+  .select-button {
+    color: rgba(white, .5);
+    font-weight: 500;
+    margin: 0 20px;
+    font-size: 1.5em;
+    cursor: pointer;
+    &:hover {
+      color: rgba(white, 1);
+    }
+    &.is-selected {
+      color: rgba($c-gold, .9);
+    }
+  }
 }
 </style>
