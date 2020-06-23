@@ -1,24 +1,17 @@
 # nlp-final
 
-## Project setup
+## Description
+This project aims to visualize the result genreated by [NLP-Final-Server](https://github.com/Louis5499/nlp-final-server).
+
+Aftering opening the nlp-final-server, this front-end will automatically listen `localhost:5000` to send request.
+
+## Prerequsite
+- Node 12^ environment
+- NPM package management
+
+
+## How to run
 ```
 npm install
-```
-
-### Compiles and hot-reloads for development
-```
 npm run serve
 ```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
